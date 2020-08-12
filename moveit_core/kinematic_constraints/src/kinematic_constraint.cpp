@@ -518,11 +518,13 @@ bool OrientationConstraint::configure(const moveit_msgs::OrientationConstraint& 
     ROS_ERROR_STREAM("Default link name = " << oc.default_link_name);
     flag_state_ = true;
     tf2::fromMsg(oc.default_orientation, q_des);
+    //tf2::fromMsg(oc.orientation, q_des);
     tf2::fromMsg(oc.orientation, q_des_offset);
+
   }
   else {
     flag_state_ = false;
-    tf2::fromMsg(oc.orientation, q_des);
+    tf2::fromMsg(oc.default_orientation, q_des);
     tf2::fromMsg(oc.orientation, q_des_offset);
   }
 
@@ -553,7 +555,7 @@ bool OrientationConstraint::configure(const moveit_msgs::OrientationConstraint& 
     tf.transformQuaternion(oc.header.frame_id, q_des, q_des);
     desired_rotation_frame_id_ = tf.getTargetFrame();
     desired_rotation_matrix_ = Eigen::Matrix3d(q_des);
-    link_object_rotation_matrix_ = desired_rotation_matrix_.transpose();
+    link_object_rotation_matrix_ = q_des.inverse() * q_des_offset;
     mobile_frame_ = false;
   }
   else
@@ -628,9 +630,9 @@ ConstraintEvaluationResult OrientationConstraint::decide(const moveit::core::Rob
 {
   if (!link_model_)
     return ConstraintEvaluationResult(true, 0.0);
-
   if(flag_state_)
     return ConstraintEvaluationResult(true, 0.0);
+
   Eigen::Vector3d xyz;
   if (mobile_frame_)
   {
@@ -645,8 +647,16 @@ ConstraintEvaluationResult OrientationConstraint::decide(const moveit::core::Rob
   {
     // diff is valid isometry by construction
     //Eigen::Isometry3d diff(desired_rotation_matrix_inv_ * state.getGlobalLinkTransform(link_model_).linear());
+    if(flag_state_){
     Eigen::Isometry3d diff(desired_rotation_matrix_.transpose() * state.getFrameTransform(link_id_).linear());
     xyz = diff.linear().eulerAngles(0, 1, 2);  // 0,1,2 corresponds to XYZ, the convention used in sampling constraints
+
+    } else {
+
+    Eigen::Isometry3d diff(desired_rotation_matrix_.transpose() * state.getGlobalLinkTransform(link_model_).linear()*link_object_rotation_matrix_.transpose());
+    //Eigen::Isometry3d diff(desired_rotation_matrix_.transpose() * state.getFrameTransform(link_id_).linear());
+    xyz = diff.linear().eulerAngles(0, 1, 2);  // 0,1,2 corresponds to XYZ, the convention used in sampling constraints
+    }
   }
 
   xyz(0) = std::min(fabs(xyz(0)), boost::math::constants::pi<double>() - fabs(xyz(0)));
@@ -657,6 +667,21 @@ ConstraintEvaluationResult OrientationConstraint::decide(const moveit::core::Rob
                 xyz(0) < absolute_x_axis_tolerance_ + std::numeric_limits<double>::epsilon();
 
   if(!result){
+    xyz = desired_rotation_matrix_.eulerAngles(0, 1, 2);  // 0,1,2 corresponds to XYZ, the convention used in sampling constraints
+    ROS_WARN_STREAM("Euler desired_rotation: x = " << xyz(0) << ", y = " << xyz(1) << ", z = " << xyz(2));
+
+    xyz = state.getFrameTransform(link_id_).linear().eulerAngles(0, 1, 2);  // 0,1,2 corresponds to XYZ, the convention used in sampling constraints
+    ROS_WARN_STREAM("Euler link_id: x = " << xyz(0) << ", y = " << xyz(1) << ", z = " << xyz(2));
+    ROS_WARN_STREAM("Isometry link_id:\n" << state.getFrameTransform(link_id_).matrix());
+
+    double q1 = state.getVariablePosition("ur3_shoulder_pan_joint");
+    double q2 = state.getVariablePosition("ur3_shoulder_lift_joint");
+    double q3 = state.getVariablePosition("ur3_elbow_joint");
+    double q4 = state.getVariablePosition("ur3_wrist_1_joint");
+    double q5 = state.getVariablePosition("ur3_wrist_2_joint");
+    double q6 = state.getVariablePosition("ur3_wrist_3_joint");
+
+    ROS_WARN_STREAM("q1 = " << q1 << ", q2 = " << q2 << ", q3 = " << q3 << ", q4 = " << q4 << ", q5 = " << q5 << ", q6 = " << q6);
     ROS_WARN("Decide Rsult = false^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
   }
 

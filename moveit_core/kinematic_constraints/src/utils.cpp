@@ -533,6 +533,7 @@ bool constructConstraints(XmlRpc::XmlRpcValue& params, moveit_msgs::Constraints&
 bool kinematic_constraints::resolveConstraintFrames(const moveit::core::RobotState& state,
                                                     moveit_msgs::Constraints& constraints)
 {
+  ROS_ERROR_STREAM("RESOLVED_CONSTRAINT_FRAME Entered !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   for (auto& c : constraints.position_constraints)
   {
     bool frame_found;
@@ -563,8 +564,12 @@ bool kinematic_constraints::resolveConstraintFrames(const moveit::core::RobotSta
     if (!frame_found)
       return false;
 
-    c.flag_state = true;
+    if(c.default_link_name.empty()){
+  ROS_ERROR_STREAM("DefaultOrientation !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     c.default_orientation = c.orientation;
+    }
+
+    c.flag_state = true;
     c.default_link_name = c.link_name;
     // If the frame of the constraint is not part of the robot link model (but an attached body or subframe),
     // the constraint needs to be expressed in the frame of a robot link.
@@ -624,13 +629,11 @@ bool kinematic_constraints::resolveConstraintFramesPath(const moveit::core::Robo
     if (c.link_name != robot_link->getName())
     {
       c.link_name = robot_link->getName();
-/*
       Eigen::Quaterniond link_name_to_robot_link(transform.linear().transpose() *
                                                  state.getGlobalLinkTransform(robot_link).linear());
       Eigen::Quaterniond quat_target;
       tf::quaternionMsgToEigen(c.orientation, quat_target);
       tf::quaternionEigenToMsg(quat_target * link_name_to_robot_link, c.orientation);
-*/
     }
   }
   return true;
