@@ -1,3 +1,16 @@
+For this hack to work you will need to add these variables to the moveit_msgs OrientationConstraint.msg
+
+``` terminal
+# Store default link_name before ResolvedConstrained changes it
+string default_link_name
+
+# Store default orientation before ResolvedConstrained changes it
+geometry_msgs/Quaternion default_orientation
+
+# Flag used to differentiate between isStateValid and isPathValid
+bool flag_state
+```
+
 <img src="https://moveit.ros.org/assets/logo/moveit_logo-black.png" alt="MoveIt Logo" width="200"/>
 
 **The MoveIt Motion Planning Framework**
