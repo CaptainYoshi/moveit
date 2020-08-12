@@ -533,7 +533,6 @@ bool constructConstraints(XmlRpc::XmlRpcValue& params, moveit_msgs::Constraints&
 bool kinematic_constraints::resolveConstraintFrames(const moveit::core::RobotState& state,
                                                     moveit_msgs::Constraints& constraints)
 {
-  ROS_ERROR_STREAM("RESOLVED_CONSTRAINT_FRAME Entered !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   for (auto& c : constraints.position_constraints)
   {
     bool frame_found;
@@ -565,7 +564,6 @@ bool kinematic_constraints::resolveConstraintFrames(const moveit::core::RobotSta
       return false;
 
     if(c.default_link_name.empty()){
-  ROS_ERROR_STREAM("DefaultOrientation !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     c.default_orientation = c.orientation;
     }
 
