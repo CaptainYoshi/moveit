@@ -509,15 +509,39 @@ bool OrientationConstraint::configure(const moveit_msgs::OrientationConstraint& 
     ROS_WARN_NAMED("kinematic_constraints", "Could not find link model for link name %s", oc.link_name.c_str());
     return false;
   }
-  Eigen::Quaterniond q;
-  tf2::fromMsg(oc.orientation, q);
-  if (fabs(q.norm() - 1.0) > 1e-3)
+
+  link_id_ = oc.default_link_name;
+
+  Eigen::Quaterniond q_des;
+  Eigen::Quaterniond q_des_offset;
+  if(oc.flag_state){
+    ROS_ERROR_STREAM("Default link name = " << oc.default_link_name);
+    flag_state_ = true;
+    tf2::fromMsg(oc.default_orientation, q_des);
+    tf2::fromMsg(oc.orientation, q_des_offset);
+  }
+  else {
+    flag_state_ = false;
+    tf2::fromMsg(oc.orientation, q_des);
+    tf2::fromMsg(oc.orientation, q_des_offset);
+  }
+
+
+  if (fabs(q_des.norm() - 1.0) > 1e-3)
   {
     ROS_WARN_NAMED("kinematic_constraints",
                    "Orientation constraint for link '%s' is probably incorrect: %f, %f, %f, "
                    "%f. Assuming identity instead.",
                    oc.link_name.c_str(), oc.orientation.x, oc.orientation.y, oc.orientation.z, oc.orientation.w);
-    q = Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0);
+    q_des = Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0);
+  }
+  if (fabs(q_des_offset.norm() - 1.0) > 1e-3)
+  {
+    ROS_WARN_NAMED("kinematic_constraints",
+                   "Orientation constraint for link '%s' is probably incorrect: %f, %f, %f, "
+                   "%f. Assuming identity instead.",
+                   oc.link_name.c_str(), oc.orientation.x, oc.orientation.y, oc.orientation.z, oc.orientation.w);
+    q_des_offset = Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0);
   }
 
   if (oc.header.frame_id.empty())
@@ -526,16 +550,16 @@ bool OrientationConstraint::configure(const moveit_msgs::OrientationConstraint& 
 
   if (tf.isFixedFrame(oc.header.frame_id))
   {
-    tf.transformQuaternion(oc.header.frame_id, q, q);
+    tf.transformQuaternion(oc.header.frame_id, q_des, q_des);
     desired_rotation_frame_id_ = tf.getTargetFrame();
-    desired_rotation_matrix_ = Eigen::Matrix3d(q);
-    desired_rotation_matrix_inv_ = desired_rotation_matrix_.transpose();
+    desired_rotation_matrix_ = Eigen::Matrix3d(q_des);
+    link_object_rotation_matrix_ = desired_rotation_matrix_.transpose();
     mobile_frame_ = false;
   }
   else
   {
     desired_rotation_frame_id_ = oc.header.frame_id;
-    desired_rotation_matrix_ = Eigen::Matrix3d(q);
+    desired_rotation_matrix_ = Eigen::Matrix3d(q_des);
     mobile_frame_ = true;
   }
   std::stringstream matrix_str;
@@ -586,8 +610,10 @@ bool OrientationConstraint::equal(const KinematicConstraint& other, double margi
 void OrientationConstraint::clear()
 {
   link_model_ = nullptr;
+  flag_state_ = true;
+  link_id_ = "";
   desired_rotation_matrix_ = Eigen::Matrix3d::Identity();
-  desired_rotation_matrix_inv_ = Eigen::Matrix3d::Identity();
+  link_object_rotation_matrix_ = Eigen::Matrix3d::Identity();
   desired_rotation_frame_id_ = "";
   mobile_frame_ = false;
   absolute_z_axis_tolerance_ = absolute_y_axis_tolerance_ = absolute_x_axis_tolerance_ = 0.0;
@@ -603,6 +629,8 @@ ConstraintEvaluationResult OrientationConstraint::decide(const moveit::core::Rob
   if (!link_model_)
     return ConstraintEvaluationResult(true, 0.0);
 
+  if(flag_state_)
+    return ConstraintEvaluationResult(true, 0.0);
   Eigen::Vector3d xyz;
   if (mobile_frame_)
   {
@@ -616,7 +644,8 @@ ConstraintEvaluationResult OrientationConstraint::decide(const moveit::core::Rob
   else
   {
     // diff is valid isometry by construction
-    Eigen::Isometry3d diff(desired_rotation_matrix_inv_ * state.getGlobalLinkTransform(link_model_).linear());
+    //Eigen::Isometry3d diff(desired_rotation_matrix_inv_ * state.getGlobalLinkTransform(link_model_).linear());
+    Eigen::Isometry3d diff(desired_rotation_matrix_.transpose() * state.getFrameTransform(link_id_).linear());
     xyz = diff.linear().eulerAngles(0, 1, 2);  // 0,1,2 corresponds to XYZ, the convention used in sampling constraints
   }
 
@@ -627,9 +656,13 @@ ConstraintEvaluationResult OrientationConstraint::decide(const moveit::core::Rob
                 xyz(1) < absolute_y_axis_tolerance_ + std::numeric_limits<double>::epsilon() &&
                 xyz(0) < absolute_x_axis_tolerance_ + std::numeric_limits<double>::epsilon();
 
+  if(!result){
+    ROS_WARN("Decide Rsult = false^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+  }
+
   if (verbose)
   {
-    Eigen::Quaterniond q_act(state.getGlobalLinkTransform(link_model_).linear());
+    Eigen::Quaterniond q_act(state.getFrameTransform(link_id_).linear());
     Eigen::Quaterniond q_des(desired_rotation_matrix_);
     ROS_INFO_NAMED("kinematic_constraints",
                    "Orientation constraint %s for link '%s'. Quaternion desired: %f %f %f %f, quaternion "

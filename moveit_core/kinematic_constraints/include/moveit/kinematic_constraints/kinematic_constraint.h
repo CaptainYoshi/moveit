@@ -479,10 +479,12 @@ public:
   }
 
 protected:
+    bool flag_state_;
+    std::string link_id_;
   const moveit::core::LinkModel* link_model_;   /**< \brief The target link model */
   Eigen::Matrix3d desired_rotation_matrix_;     /**< \brief The desired rotation matrix in the tf frame. Guaranteed to
                                                  * be valid rotation matrix. */
-  Eigen::Matrix3d desired_rotation_matrix_inv_; /**< \brief The inverse of the desired rotation matrix, precomputed for
+  Eigen::Matrix3d link_object_rotation_matrix_; /**< \brief The inverse of the desired rotation matrix, precomputed for
                                                  * efficiency. Guaranteed to be valid rotation matrix. */
   std::string desired_rotation_frame_id_;       /**< \brief The target frame of the transform tree */
   bool mobile_frame_;                           /**< \brief Whether or not the header frame is mobile or fixed */

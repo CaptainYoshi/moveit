@@ -48,7 +48,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <memory>
 #include <set>
-
+#include <moveit/kinematic_constraints/utils.h>
 namespace planning_scene
 {
 const std::string PlanningScene::OCTOMAP_NS = "<octomap>";
@@ -2168,7 +2168,10 @@ bool PlanningScene::isPathValid(const robot_trajectory::RobotTrajectory& traject
   if (invalid_index)
     invalid_index->clear();
   kinematic_constraints::KinematicConstraintSet ks_p(getRobotModel());
-  ks_p.add(path_constraints, getTransforms());
+
+  moveit_msgs::Constraints path_constraints_modified = path_constraints;
+  kinematic_constraints::resolveConstraintFramesPath(trajectory.getWayPoint(0), path_constraints_modified);
+  ks_p.add(path_constraints_modified, getTransforms());
   std::size_t n_wp = trajectory.getWayPointCount();
   for (std::size_t i = 0; i < n_wp; ++i)
   {

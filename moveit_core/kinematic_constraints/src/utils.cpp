@@ -563,6 +563,9 @@ bool kinematic_constraints::resolveConstraintFrames(const moveit::core::RobotSta
     if (!frame_found)
       return false;
 
+    c.flag_state = true;
+    c.default_orientation = c.orientation;
+    c.default_link_name = c.link_name;
     // If the frame of the constraint is not part of the robot link model (but an attached body or subframe),
     // the constraint needs to be expressed in the frame of a robot link.
     if (c.link_name != robot_link->getName())
@@ -573,6 +576,61 @@ bool kinematic_constraints::resolveConstraintFrames(const moveit::core::RobotSta
       Eigen::Quaterniond quat_target;
       tf::quaternionMsgToEigen(c.orientation, quat_target);
       tf::quaternionEigenToMsg(quat_target * link_name_to_robot_link, c.orientation);
+    }
+  }
+  return true;
+}
+
+bool kinematic_constraints::resolveConstraintFramesPath(const moveit::core::RobotState& state,
+                                                    moveit_msgs::Constraints& constraints)
+{
+  for (auto& c : constraints.position_constraints)
+  {
+    bool frame_found;
+    const moveit::core::LinkModel* robot_link;
+    const Eigen::Isometry3d& transform = state.getFrameInfo(c.link_name, robot_link, frame_found);
+    if (!frame_found)
+      return false;
+
+    // If the frame of the constraint is not part of the robot link model (but an attached body or subframe),
+    // the constraint needs to be expressed in the frame of a robot link.
+    if (c.link_name != robot_link->getName())
+    {
+      Eigen::Isometry3d robot_link_to_link_name = state.getGlobalLinkTransform(robot_link).inverse() * transform;
+      Eigen::Vector3d offset_link_name(c.target_point_offset.x, c.target_point_offset.y, c.target_point_offset.z);
+      Eigen::Vector3d offset_robot_link = robot_link_to_link_name * offset_link_name;
+
+      c.link_name = robot_link->getName();
+      tf::vectorEigenToMsg(offset_robot_link, c.target_point_offset);
+    }
+  }
+
+  for (auto& c : constraints.orientation_constraints)
+  {
+    bool frame_found;
+    const moveit::core::LinkModel* robot_link;
+    // getFrameInfo() returns a valid isometry by contract
+    const Eigen::Isometry3d& transform = state.getFrameInfo(c.link_name, robot_link, frame_found);
+    if (!frame_found)
+      return false;
+
+
+    c.flag_state = false;
+    c.default_orientation = c.orientation;
+    c.default_link_name = c.link_name;
+    // If the frame of the constraint is not part of the robot link model (but an attached body or subframe),
+    // the constraint needs to be expressed in the frame of a robot link.
+
+    if (c.link_name != robot_link->getName())
+    {
+      c.link_name = robot_link->getName();
+/*
+      Eigen::Quaterniond link_name_to_robot_link(transform.linear().transpose() *
+                                                 state.getGlobalLinkTransform(robot_link).linear());
+      Eigen::Quaterniond quat_target;
+      tf::quaternionMsgToEigen(c.orientation, quat_target);
+      tf::quaternionEigenToMsg(quat_target * link_name_to_robot_link, c.orientation);
+*/
     }
   }
   return true;
