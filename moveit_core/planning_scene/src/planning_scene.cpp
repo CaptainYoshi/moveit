@@ -1882,20 +1882,7 @@ bool PlanningScene::processCollisionObjectMove(const moveit_msgs::CollisionObjec
 {
   if (world_->hasObject(object.id))
   {
-    // update object pose
-    if (!object.primitives.empty() || !object.meshes.empty() || !object.planes.empty())
-      ROS_WARN_NAMED(LOGNAME, "Move operation for object '%s' ignores the geometry specified in the message.",
-                     object.id.c_str());
-
-    const Eigen::Isometry3d& world_to_object_header_transform = getFrameTransform(object.header.frame_id);
-    Eigen::Isometry3d header_to_pose_transform;
-
-    PlanningScene::poseMsgToEigen(object.pose, header_to_pose_transform);
-
-    const Eigen::Isometry3d object_frame_transform = world_to_object_header_transform * header_to_pose_transform;
-    world_->setObjectPose(object.id, object_frame_transform);
-
-    // update shape poses
+    // update shape poses, must be updated before the object pose
     if (!object.primitive_poses.empty() || !object.mesh_poses.empty() || !object.plane_poses.empty())
     {
       auto world_object = world_->getObject(object.id);  // object exists, checked earlier
@@ -1926,13 +1913,27 @@ bool PlanningScene::processCollisionObjectMove(const moveit_msgs::CollisionObjec
         PlanningScene::poseMsgToEigen(shape_pose, shape_poses.back());
       }
 
-      if (!world_->moveShapesInObject(object.id, shape_poses))
+      // move shapes without notifying the observer, will be notified later when calling `setObjectPose`
+      bool notify_observer = false;
+      if (!world_->moveShapesInObject(object.id, shape_poses, notify_observer))
       {
         ROS_ERROR_NAMED(LOGNAME, "Move operation for object '%s' internal world error. Cannot move.", object.id.c_str());
         return false;
       }
     }
 
+    // update object pose
+    if (!object.primitives.empty() || !object.meshes.empty() || !object.planes.empty())
+      ROS_WARN_NAMED(LOGNAME, "Move operation for object '%s' ignores the geometry specified in the message.",
+                     object.id.c_str());
+
+    const Eigen::Isometry3d& world_to_object_header_transform = getFrameTransform(object.header.frame_id);
+    Eigen::Isometry3d header_to_pose_transform;
+
+    PlanningScene::poseMsgToEigen(object.pose, header_to_pose_transform);
+
+    const Eigen::Isometry3d object_frame_transform = world_to_object_header_transform * header_to_pose_transform;
+    world_->setObjectPose(object.id, object_frame_transform);  // also update the shape poses
     return true;
   }
 

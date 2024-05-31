@@ -239,7 +239,8 @@ bool World::moveShapeInObject(const std::string& object_id, const shapes::ShapeC
   return false;
 }
 
-bool World::moveShapesInObject(const std::string& object_id, const EigenSTL::vector_Isometry3d& shape_poses)
+bool World::moveShapesInObject(const std::string& object_id, const EigenSTL::vector_Isometry3d& shape_poses,
+                               bool notify_observer)
 {
   auto it = objects_.find(object_id);
   if (it != objects_.end())
@@ -252,7 +253,8 @@ bool World::moveShapesInObject(const std::string& object_id, const EigenSTL::vec
         it->second->shape_poses_[i] = shape_poses[i];
         it->second->global_shape_poses_[i] = it->second->pose_ * shape_poses[i];
       }
-      notify(it->second, MOVE_SHAPE);
+      if (notify_observer)
+        notify(it->second, MOVE_SHAPE);
       return true;
     }
   }
