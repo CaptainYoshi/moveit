@@ -82,6 +82,274 @@ TEST_F(LoadPlanningModelsPr2, Model)
   moveit::tools::Profiler::Status();
 }
 
+TEST(SatisfiesPositionBounds, RevoluteJoint)
+{
+  double jpos;
+  std::vector<moveit::core::VariableBounds> bounds;
+  bounds.resize(1);
+
+  moveit::core::RevoluteJointModel joint("revolute");
+  joint.setAxis(Eigen::Vector3d(1, 0, 0));
+
+  {
+    bounds[0].min_position_ = -4;
+    bounds[0].max_position_ = -4;
+    joint.setVariableBounds("revolute", bounds[0]);
+
+    jpos = -5;
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+
+    jpos = -4;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+
+    jpos = -3;
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+  }
+  {
+    bounds[0].min_position_ = -4;
+    bounds[0].max_position_ = -1;
+    joint.setVariableBounds("revolute", bounds[0]);
+
+    jpos = -3;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3.1));
+
+    jpos = -2;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3.1));
+
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -2.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3.1));
+
+    jpos = -1;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3.1));
+
+    jpos = 0;
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 3.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -3.1));
+  }
+  {
+    bounds[0].min_position_ = -4;
+    bounds[0].max_position_ = 0;
+    joint.setVariableBounds("revolute", bounds[0]);
+
+    jpos = -4;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+
+    jpos = -3;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = -2;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -1.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -2.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = -1;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 0;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+
+    jpos = 1;
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+  }
+  {
+    bounds[0].min_position_ = 0;
+    bounds[0].max_position_ = 4;
+    joint.setVariableBounds("revolute", bounds[0]);
+
+    jpos = -1;
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 0;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 1;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 2;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 2.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -1.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -2));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -2.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 3;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 4;
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+
+    jpos = 5;
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0));
+    ASSERT_FALSE(joint.satisfiesPositionBounds(&jpos, bounds, 0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, 4.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -0.9));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -1.1));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4));
+    ASSERT_TRUE(joint.satisfiesPositionBounds(&jpos, bounds, -4.1));
+  }
+};
+
 TEST(SiblingAssociateLinks, SimpleYRobot)
 {
   /* base_link - a - b - c
